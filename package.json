@@ -1,0 +1,38 @@
+{
+  "name": "rpio-define",
+  "version": "0.0.1",
+  "description": "Modern style define GPIO for RaspberryPi.",
+  "main": "lib/defineIO.js",
+  "types": "lib/defineIO.d.ts",
+  "exports": {
+    "import": "./lib/esm/defineIO.js",
+    "require": "./lib/defineIO.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MKGaru/rpio-define.git"
+  },
+  "keywords": [
+    "gpio",
+    "raspberrypi",
+    "rpio"
+  ],
+  "author": "MKGaru",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/MKGaru/rpio-define/issues"
+  },
+  "homepage": "https://github.com/MKGaru/rpio-define#readme",
+  "devDependencies": {
+    "@types/rpio": "^2.4.2",
+    "rpio": "^2.4.2",
+    "typescript": "^4.5.5"
+  },
+  "peerDependencies": {
+    "rpio": "*"
+  }
+}
