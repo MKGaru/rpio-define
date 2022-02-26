@@ -1,6 +1,6 @@
 {
   "name": "rpio-define",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Modern style define GPIO for RaspberryPi.",
   "main": "lib/defineIO.js",
   "module": "lib/esm/defineIO.js",
@@ -10,8 +10,9 @@
     "require": "./lib/defineIO.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc"
+    "build": "npm run build:cjs && npm run build:esm",
+    "build:cjs": "tsc",
+    "build:esm": "tsc --project tsconfig.esm.json"
   },
   "repository": {
     "type": "git",
