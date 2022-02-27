@@ -1,6 +1,6 @@
 {
   "name": "rpio-define",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Modern style define GPIO for RaspberryPi.",
   "main": "lib/defineIO.js",
   "module": "lib/esm/defineIO.js",
