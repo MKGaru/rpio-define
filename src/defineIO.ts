@@ -1,16 +1,16 @@
 import rpio from 'rpio'
 
-type BaseaPortDescriptor = {
+type BasePortDescriptor = {
 	pin: number,
 }
 
-type DigitalInDescriptor = BaseaPortDescriptor & {
+type DigitalInDescriptor = BasePortDescriptor & {
 	type: 'digital' | typeof Boolean,
 	mode?: 'input' | typeof rpio.INPUT | 'inputpullup',
 	callback?: (pin: number) => void,
 	edge?: 'rising' | 'falling' | 'both' | typeof rpio.POLL_HIGH | typeof rpio.POLL_LOW | typeof rpio.POLL_BOTH
 }
-type DigitalOutDescriptor = BaseaPortDescriptor & {
+type DigitalOutDescriptor = BasePortDescriptor & {
 	type: 'digital' | typeof Boolean,
 	mode?: 'output' | typeof rpio.OUTPUT | 'outputopendrain',
 	default?: boolean,
@@ -22,14 +22,14 @@ type ServoRangeDefine = number | {
 	angle: number,
 	pulse: number,
 }
-type ServoPortDescriptor = BaseaPortDescriptor & {
+type ServoPortDescriptor = BasePortDescriptor & {
 	type: 'servo',
 	default?: number,
 	min?: ServoRangeDefine,
 	max?: ServoRangeDefine,
 	offset?: number,
 }
-type PWMPortDescriptor = BaseaPortDescriptor & {
+type PWMPortDescriptor = BasePortDescriptor & {
 	type: 'pwm',
 	default?: number,
 	min?: number,
@@ -51,12 +51,20 @@ type PWMPortDescriptor = BaseaPortDescriptor & {
 	,
 }
 
+export type CustomPortDescriptor = <T>(...args: any[]) => {
+	type: string,
+	get(): T,
+	set(value: T): void,
+}
+
 type PortDescritpor =
 	DigitalPortDescriptor |
 	ServoPortDescriptor |
-	PWMPortDescriptor
+	PWMPortDescriptor |
+	ReturnType<CustomPortDescriptor>
 
 type PortDescritpors = {[label: string]: PortDescritpor}
+
 
 /** use example
 
@@ -89,6 +97,7 @@ export function defineIO<IODescriptor extends PortDescritpors>(descriptors: IODe
 			IODescriptor[label] extends DigitalPortDescriptor ? boolean
 			: IODescriptor[label] extends ServoPortDescriptor ? number
 			: IODescriptor[label] extends PWMPortDescriptor ? number
+			: IODescriptor[label] extends ReturnType<CustomPortDescriptor> ? ReturnType<IODescriptor[label]['get']>
 			: never
 	} = {} as any
 
@@ -337,9 +346,41 @@ export function defineIO<IODescriptor extends PortDescritpors>(descriptors: IODe
 			// @ts-ignore
 			io[key] = value
 		}
+		else if('get' in descriptor) {
+			Object.defineProperty(io, key, {
+				get: descriptor.get,
+				set: descriptor.set,
+				enumerable: true,
+			})
+		}
 	}
 	return io
 }
 Object.freeze(defineIO)
 export default defineIO
 
+function MCP4725(descriptor: { address: number }) {
+	return {
+		type: 'mcp4725',
+		get() {
+			return 0
+		},
+		set(value: number) {
+
+		}
+	}
+}
+
+const io = defineIO({
+	led: {
+		pin: 16,
+		type: Boolean,
+	},
+	motor: {
+		pin: 12,
+		type: 'servo'
+	},
+	DAC: MCP4725({
+		address: 0x60,
+	}),
+})
