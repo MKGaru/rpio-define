@@ -7,6 +7,7 @@ const Registers = Object.freeze({
 	TEMP_OUT: 0x41,
 	GYRO_OUT: 0x43,
 	
+	USER_CTRL: 0x6A,
 	PWR_MGMT_1: 0x6B,
 })
 
@@ -21,21 +22,39 @@ const RAD_TO_DEG = (360 / (2 * Math.PI))
 function MPU6050(descriptor) {
 	rpio.i2cBegin()
 
-	const arrayBuffer = new ArrayBuffer(
-		2 * 3 +
-		2 +
-		2 * 3
-	)
-	const buffer = Buffer.from(arrayBuffer)
-	const accelView = new DataView(arrayBuffer, 0, 6)
-	const tempView = new DataView(arrayBuffer, 6, 2)
-	const gyroView = new DataView(arrayBuffer, 8, 6)
+	// init buffer and view
+	const { view, buffer } = (() => {
+		const alloc = (() => {
+			let pos = 0
+			/** @param size {number} bytes */
+			return (size = 0) => {
+				const from = pos
+				pos += size | 0
+				return [from, size]
+			}
+		})()
+	
+		const [accelPos, accelSize] = alloc(2 * 3)
+		const [tempPos, tempSize] = alloc(2)
+		const [gyroPos, gyroSize] = alloc(2 * 3)
+	
+		const memory = new ArrayBuffer( alloc()[0] )
+		const buffer = Buffer.from(memory)
+
+		return {
+			buffer,
+			view: {
+				accel: new DataView(memory, accelPos, accelSize),
+				temp: new DataView(memory, tempPos, tempSize),
+				gyro: new DataView(memory, gyroPos, gyroSize),
+			}
+		}
+	})()
 
 	const port = {
 		enable() {
 			rpio.i2cSetBaudRate(100_000)
 			rpio.i2cSetSlaveAddress(descriptor.address)
-			// https://shizenkarasuzon.hatenablog.com/entry/2019/02/16/162647
 			
 			port.reset()
 			port.fetch()
@@ -62,29 +81,30 @@ function MPU6050(descriptor) {
 				buffer,
 			)
 		},
+		
 		get temp() {
-			return tempView.getInt16(0) * TEMP_SCALER + 36.53
+			return view.temp.getInt16(0) * TEMP_SCALER + 36.53
 		},
 		accel: {
 			get x() {
-				return accelView.getInt16(2 * 0) * ACCEL_SCALER
+				return view.accel.getInt16(2 * 0) * ACCEL_SCALER
 			},
 			get y() {
-				return accelView.getInt16(2 * 1) * ACCEL_SCALER
+				return view.accel.getInt16(2 * 1) * ACCEL_SCALER
 			},
 			get z() {
-				return accelView.getInt16(2 * 2) * ACCEL_SCALER
+				return view.accel.getInt16(2 * 2) * ACCEL_SCALER
 			}
 		},
 		gyro: {
 			get x() {
-				return gyroView.getInt16(2 * 0) * GYRO_SCALER
+				return view.gyro.getInt16(2 * 0) * GYRO_SCALER
 			},
 			get y() {
-				return gyroView.getInt16(2 * 1) * GYRO_SCALER
+				return view.gyro.getInt16(2 * 1) * GYRO_SCALER
 			},
 			get z() {
-				return gyroView.getInt16(2 * 2) * GYRO_SCALER
+				return view.gyro.getInt16(2 * 2) * GYRO_SCALER
 			}
 		},
 		get roll() {

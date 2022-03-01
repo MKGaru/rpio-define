@@ -15,7 +15,7 @@ const io = defineIO({
 		type: Boolean,
 		default: true,
 	},
-	chargeLED: {
+	stateLED: {
 		pin: 6,
 		type: Boolean,
 	},
@@ -30,6 +30,13 @@ const io = defineIO({
 io.axis.enable()
 
 setInterval(() => {
+	// read device motion from i²c
 	io.axis.fetch()
-	
+	const roll = io.axis.roll
+	// stateLED on if device roll over 30 degree
+	io.stateLED = roll > 30
+	// dacWrite value
+	io.dac = roll / 180
+
+	console.log(io.axis.roll, io.axis.pitch)
 }, 100)
