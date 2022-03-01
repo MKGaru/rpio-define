@@ -1,7 +1,7 @@
-[![npm version](https://badge.fury.io/js/rpio-define.svg)](https://badge.fury.io/js/rpio-define)
-
 [WIP] rpio-define
 =========================
+[![npm version](https://badge.fury.io/js/rpio-define.svg)](https://badge.fury.io/js/rpio-define)
+
 Modern style define GPIO for RaspberryPi.
 
 Install
@@ -15,29 +15,25 @@ Usage example
 -------------------------
 ```javascript
 const rpio = require('rpio')
-const { defineIO } = require('rpio-define')
+const { defineIO, DigitalOutput, DigitalInput } = require('rpio-define')
 
 rpio.init({ mapping: 'gpio' })
 
 const io = defineIO({
-    powerLED: {
+    powerLED: DigitalOutput({
       pin: 5,
-      type: Boolean,
       default: true,
-    },
-    chargeLED: {
+    }),
+    chargeLED: DigitalOutput({
       pin: 6,
-      type: Boolean,
-    },
-    button: {
+    }),
+    button: DigitalInput({
       pin:16,
-      type: Boolean,
-      mode: 'input',
       callback() {
         // chargeLED on while button push
         io.chargeLED = io.button
       },
-    }
+    })
 })
 ```
 
@@ -48,7 +44,7 @@ All these examples use the gpio numbering (1-27) and assume that the example is 
 
 ```javascript
 const rpio = require('rpio')
-const { defineIO } = require('rpio-define')
+const { defineIO, DigitalOutput, DigitalInput } = require('rpio-define')
 
 rpio.init({ mapping: 'gpio' })
 
@@ -72,16 +68,26 @@ const io = defineIO({
 console.log(`Button state is currently ${io.button ? 'on' : 'off'}`)
 ```
 
+or ( These are equivalent )
+
+```javascript
+const io = defineIO({
+  button: DigitalInput({
+    pin: 22,
+  })
+})
+
+console.log(`Button state is currently ${io.button ? 'on' : 'off'}`)
+```
+
 ### Blink an LED
 Blink an LED attached to GPIO23 a few times:
 
 ```javascript
 const io = defineIO({
-  led: {
+  led: DigitalOutput({
     pin: 23,
-    type: Boolean,
-    mode: 'output',
-  }
+  })
 })
 
 async function task(times) {
@@ -101,9 +107,8 @@ Configure the internal pullup resistor on GPIO22 and watch the pin for pushes on
 
 ```javascript
 const io = defineIO({
-  button: {
+  button: DigitalInput({
     pin: 22,
-    type: Boolean,
     mode: 'inputpullup',
     callback(pin) {
        /*
@@ -117,7 +122,7 @@ const io = defineIO({
        }, 20)
     },
     edge: 'falling', // 'falling' = rpio.POLL_LOW , 'rising' = rpio.POLL_HIGH, 'both' = rpio.POLL_BOTH
-  }
+  })
 })
 ```
 
@@ -187,3 +192,50 @@ const io = defineIO({
 io.yaw = 90
 ```
 
+### Custom Driver
+
+```javascript
+/**
+ *  define simple driver for i²c 12bit DAC MCP4725
+ *  @param descriptor {{ address: number, min?: number, max?: number }}
+ */
+function MCP4725(descriptor) {
+  if (typeof descriptor.min == 'undefined') descriptor.min = 0
+  if (typeof descriptor.max == 'undefined') descriptor.max = 1
+  rpio.i2cBegin()
+
+  return {
+    type: 'mcp4725',
+    get() {
+      const register = Buffer.alloc(6)
+      rpio.i2cSetSlaveAddress(descriptor.address)
+      rpio.i2cSetBaudRate(100_000)
+      rpio.i2cRead(register, 6)
+      const data = Array.from(register)
+      const dacValue = (data[1] << 4) + (data[2] >> 4)
+      return dacValue / 4095 * (descriptor.max - descriptor.min) + descriptor.min
+    },
+    /** @param value {number} */
+    set(value) {
+      value = Math.min(descriptor.max, Math.max(descriptor.min, value))
+      rpio.i2cSetSlaveAddress(descriptor.address)
+      rpio.i2cSetBaudRate(100_000)
+      const output = (value - descriptor.min) / (descriptor.max - descriptor.min) * 4095
+      const command = [
+        0x60,
+        output >> 4,
+        (output & 0b1111) << 4
+      ]
+      rpio.i2cWrite(Buffer.from(command))
+    }
+  }
+}
+
+const io = defineIO({
+  dac: MCP4725({
+    address: 0x60,
+  })
+})
+
+io.dal = 0.5 // normalized value
+```

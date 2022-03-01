@@ -70,23 +70,35 @@ type PortDescritpor =
 
 type PortDescritpors = {[label: string]: PortDescritpor}
 
+function definePort<T extends BasePortDescriptor & {'type': T['type']}>(type: T['type'], modifier?: (opt: T) => void) {
+	return function (option: Omit<T, 'type'> & { type?: T['type'] }) {
+		option.type = type
+		if (typeof modifier == 'function') modifier(option as T)
+		return option as T
+	}
+}
+export const DigitalOutput = definePort<DigitalOutDescriptor>(Boolean)
+export const DigitalInput = definePort<DigitalInDescriptor>(Boolean, (opt) => {
+	if (typeof opt.mode == 'undefined') opt.mode = 'input'
+})
+export const Servo = definePort<ServoPortDescriptor>('servo')
+export const PWM = definePort<PWMPortDescriptor>('pwm')
+
 /** use example
 
 ```javascript
     import rpio from 'rpio'
-    import { defineIO } from 'rpio-define'
+    import { defineIO, DigitalOutput, Servo } from 'rpio-define'
 
     rpio.init({ mapping: 'gpio' });
     
     const io = defineIO({
-        led: {
-            pin: 16,
-            type: Boolean,
-        },
-        motor: {
+        led: DigitalOutput({
+            pin: 16
+        }),
+        motor: Servo({
             pin: 12,
-            type: 'servo'
-        }
+        })
     });
 
     io.led = true;  // LED on!
