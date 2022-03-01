@@ -51,11 +51,16 @@ type PWMPortDescriptor = BasePortDescriptor & {
 	,
 }
 
-export type CustomPortDescriptor = <T>(...args: any[]) => {
+type CustomDriver = <T>(...args: any[]) => {
+	type: string,
+	value: T,
+}
+type CustomDescriptor = <T>(...args: any[]) => {
 	type: string,
 	get(): T,
 	set(value: T): void,
 }
+export type CustomPortDescriptor = CustomDriver | CustomDescriptor
 
 type PortDescritpor =
 	DigitalPortDescriptor |
@@ -96,7 +101,12 @@ export function defineIO<IODescriptor extends PortDescritpors>(descriptors: IODe
 			IODescriptor[label] extends DigitalPortDescriptor ? boolean
 			: IODescriptor[label] extends ServoPortDescriptor ? number
 			: IODescriptor[label] extends PWMPortDescriptor ? number
-			: IODescriptor[label] extends ReturnType<CustomPortDescriptor> ? ReturnType<IODescriptor[label]['get']>
+			: IODescriptor[label] extends ReturnType<CustomPortDescriptor> ?
+				IODescriptor[label] extends { get: () => any }
+					? ReturnType<IODescriptor[label]['get']>
+					: IODescriptor[label] extends ReturnType<CustomDriver> ?
+						IODescriptor[label]['value']
+						: never
 			: never
 	} = {} as any
 
@@ -352,52 +362,14 @@ export function defineIO<IODescriptor extends PortDescritpors>(descriptors: IODe
 				enumerable: true,
 			})
 		}
+		else if ('value' in descriptor) {
+			Object.defineProperty(io, key, {
+				value: descriptor.value,
+				enumerable: true,
+			})
+		}
 	}
 	return io
 }
 Object.freeze(defineIO)
 export default defineIO
-
-/* Todo documentation: custom port driver
-function MCP4725(descriptor: { address: number }) {
-	rpio.i2cBegin()
-
-	return {
-		type: 'mcp4725',
-		get() {
-			const register = Buffer.alloc(6)
-			rpio.i2cSetSlaveAddress(descriptor.address)
-			rpio.i2cSetBaudRate(100_000)
-			rpio.i2cRead(register, 6)
-			const data = Array.from(register)
-			const dacValue = (data[1] << 4) + (data[2] >> 4)
-			return dacValue / 4095
-		},
-		set(value: number) {
-			rpio.i2cSetSlaveAddress(descriptor.address)
-			rpio.i2cSetBaudRate(100_000)
-			const output = value * 4095
-			const command = [
-				0x60,
-				output >> 4,
-				(output & 0b1111) << 4
-			]
-			rpio.i2cWrite(Buffer.from(command))
-		}
-	}
-}
-
-const io = defineIO({
-	led: {
-		pin: 16,
-		type: Boolean,
-	},
-	motor: {
-		pin: 12,
-		type: 'servo'
-	},
-	DAC: MCP4725({
-		address: 0x60,
-	}),
-})
-*/
