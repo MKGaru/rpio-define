@@ -1,4 +1,5 @@
 import rpio from 'rpio'
+export { I2CDevice, Bit, Bits } from './i2c'
 
 type BasePortDescriptor = {
 	pin: number,

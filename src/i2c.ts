@@ -12,70 +12,37 @@ type I2C_RESULT = typeof I2C_SUCCESS
 type BitPos = 0|1|2|3|4|5|6|7
 type BitLength = 1|2|3|4|5|6|7|8
 
-export type Bit = 0|1
-export type Bit2 = Bit|2|3
-export type Bit3 = Bit2|4|5|6|7
-export type Bit4 =
-	Bit3|8|9|
-	10|11|12|13|14|15
-export type Bit5 =
-	Bit4|             16|17|18|19|
-	20|21|22|23|24|25|26|27|28|29|
-	30|31
-export type Bit6 =
-	Bit5| 32|33|34|35|36|37|38|39|
-	40|41|42|43|44|45|46|47|48|49|
-	50|51|52|53|54|55|56|57|58|59|
-	60|61|62|63
-export type Bit7 =
-	Bit6|       64|65|66|67|68|69|
-	70|71|72|73|74|75|76|77|78|79|
-	80|81|82|83|84|85|86|87|88|89|
-	90|91|92|93|94|95|96|97|98|99|
-	100|101|102|103|104|105|106|107|108|109|
-	110|111|112|113|114|115|116|117|118|119|
-	120|121|122|123|124|125|126|127
-export type Bit8 =
-	Bit7|                           128|129|
-	130|131|132|133|134|135|136|137|138|139|
-	140|141|142|143|144|145|146|147|148|149|
-	150|151|152|153|154|155|156|157|158|159|
-	160|161|162|163|164|165|166|167|168|169|
-	170|171|172|173|174|175|176|177|178|179|
-	180|181|182|183|184|185|186|187|188|189|
-	190|191|192|193|194|195|196|197|198|199|
-	200|201|202|203|204|205|206|207|208|209|
-	210|211|212|213|214|215|216|217|218|219|
-	220|221|222|223|224|225|226|227|228|229|
-	230|231|232|233|234|235|236|237|238|239|
-	240|241|242|243|244|245|246|247|248|249|
-	250|251|252|253|254|255
-export type Byte = Bit8
+type ZeroTo<To extends number, Result extends any[]= []>
+	= Result['length'] extends To
+		? Result[number]
+		: ZeroTo<To, [...Result, Result['length']]>
+type _Pow2<T extends number, R1 extends any[] = [any], R2 extends any[] = []> =
+	R2['length'] extends T
+		? R1
+		: [..._Pow2<T, [...R1, ...R1], [...R2, any]>]
+type Pow2<T extends number> =
+	_Pow2<T>['length'] extends number
+		? _Pow2<T>['length']
+		: never
+export type Bits<Length extends BitLength> = ZeroTo<Pow2<Length>>
 
-export type Bits<Length extends BitLength> = 
-	Length extends 8 ? Bit8 :
-	Length extends 7 ? Bit7 :
-	Length extends 6 ? Bit6 :
-	Length extends 5 ? Bit5 :
-	Length extends 4 ? Bit4 :
-	Length extends 3 ? Bit3 :
-	Length extends 2 ? Bit2 :
-	Length extends 1 ? Bit :
-	never
+export type Bit = Bits<1>
+export type Byte = Bits<8>
 
 type AvailableLength<Position extends BitPos> =
-	Position extends 7 ? 1 :
-	Position extends 6 ? 1|2 :
-	Position extends 5 ? 1|2|3 :
-	Position extends 4 ? 1|2|3|4 :
-	Position extends 3 ? 1|2|3|4|5 :
-	Position extends 2 ? 1|2|3|4|5|6 :
-	Position extends 1 ? 1|2|3|4|5|6|7 :
-	Position extends 0 ? BitLength :
+	Position extends 0 ? 1 :
+	Position extends 1 ? 1|2 :
+	Position extends 2 ? 1|2|3 :
+	Position extends 3 ? 1|2|3|4 :
+	Position extends 4 ? 1|2|3|4|5 :
+	Position extends 5 ? 1|2|3|4|5|6 :
+	Position extends 6 ? 1|2|3|4|5|6|7 :
+	Position extends 7 ? BitLength :
 	never
 
 /**
-This class copy from @ros2jsguy mpu6050-motion-data: https://github.com/ros2jsguy/mpu6050-motion-data/blob/0819863463db455c88a37b94c9280dba9a5118b2/src/rpio-i2c-helper.ts
+This class copy from @ros2jsguy mpu6050-motion-data: https://github.com/ros2jsguy/mpu6050-motion-data/blob/0819863463db455c88a37b94c9280dba9a5118b2/src/rpio-i2c-helper.ts  
+(* but not compatible.)
 
 usage.  
 ```typescript
@@ -151,9 +118,9 @@ export class I2CDevice<Register extends number> {
 	 * @param bitNum Bit position to read (0-7)
 	 * @returns Status bit value
 	 */
-	readBit(regAddr: Register, bitNum: BitPos): number {
+	readBit(regAddr: Register, bitNum: BitPos): Bit {
 		const b = this.readByte(regAddr)
-		return  b & (1 << bitNum)
+		return  ((b & (1 << bitNum)) >> bitNum) as Bit
 	}
 
 	/** Read multiple bits from an 8-bit device register.
