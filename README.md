@@ -237,5 +237,5 @@ const io = defineIO({
   })
 })
 
-io.dal = 0.5 // normalized value
+io.dac = 0.5 // normalized value
 ```

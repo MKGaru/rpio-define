@@ -1,6 +1,6 @@
 const rpio = require('rpio')
 
-const Registers = Object.freeze({
+const Registers = Object.freeze(/** @type {const} */({
 	INT_BYPASS: 0x37,
 
 	ACCEL_OUT: 0x3B,
@@ -9,7 +9,7 @@ const Registers = Object.freeze({
 	
 	USER_CTRL: 0x6A,
 	PWR_MGMT_1: 0x6B,
-})
+}))
 
 const GYRO_SCALER = (1 / 131) //Datasheet Section 6.1
 const ACCEL_SCALER = (1 / 16384) //Datasheet Section 6.2
