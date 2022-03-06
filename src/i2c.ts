@@ -12,18 +12,14 @@ type I2C_RESULT = typeof I2C_SUCCESS
 type BitPos = 0|1|2|3|4|5|6|7
 type BitLength = 1|2|3|4|5|6|7|8
 
-type ZeroTo<To extends number, Result extends any[]= []>
+type ZeroTo<To extends number, Result extends unknown[]= []>
 	= Result['length'] extends To
 		? Result[number]
 		: ZeroTo<To, [...Result, Result['length']]>
-type _Pow2<T extends number, R1 extends any[] = [any], R2 extends any[] = []> =
-	R2['length'] extends T
-		? R1
-		: [..._Pow2<T, [...R1, ...R1], [...R2, any]>]
-type Pow2<T extends number> =
-	_Pow2<T>['length'] extends number
-		? _Pow2<T>['length']
-		: never
+type Pow2<To extends number, Result extends unknown[] = [unknown], Counter extends unknown[] = []> =
+	Counter['length'] extends To
+		? Result["length"]
+		: Pow2<To, [...Result, ...Result], [...Counter, unknown]>
 export type Bits<Length extends BitLength> = ZeroTo<Pow2<Length>>
 
 export type Bit = Bits<1>
