@@ -111,7 +111,7 @@ function MPU6050(descriptor) {
 			return Math.atan2(port.accel.y, port.accel.z) * RAD_TO_DEG
 		},
 		get pitch() {
-			return Math.atan(-port.accel.x / Math.sqrt(port.accel.y ** 2, port.accel.z ** 2)) * RAD_TO_DEG
+			return Math.atan(-port.accel.x / Math.sqrt(port.accel.y ** 2 + port.accel.z ** 2)) * RAD_TO_DEG
 		}
 	}
 	return {
